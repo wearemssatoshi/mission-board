@@ -1034,8 +1034,7 @@
           // GAS is empty but local has data → upload local to GAS
           tasks=localTasks;
           setBadge('syncing');
-          const flatTasks=tasks.map(t=>({...t,links:JSON.stringify(t.links||[])}));
-          const up=await gasPost({action:'bulk',tasks:flatTasks});
+          const up=await gasPost({action:'bulk',tasks:tasks});
           if(up.success){setBadge('live');toast('LOCAL → GAS SYNCED')}
           else setBadge('live');
           render();
@@ -1054,9 +1053,8 @@
     async function gasSaveTask(task){
       if(!GAS_URL||!gasLive){saveLocal();return}
       setBadge('syncing');
-      // Flatten links to JSON string for GAS spreadsheet storage
-      const flat={...task, links:JSON.stringify(task.links||[])};
-      const res=await gasPost({action:'save',task:flat});
+      // GAS backend already JSON.stringify(task.links) in saveTask — send array as-is
+      const res=await gasPost({action:'save',task:task});
       if(res.error){gasLive=false;setBadge('offline');toast('OFFLINE MODE')}
       else setBadge('live');
     }
@@ -1094,8 +1092,7 @@
             // Sync to GAS if live
             if(GAS_URL&&gasLive){
               setBadge('syncing');
-              const flatTasks=tasks.map(t=>({...t,links:JSON.stringify(t.links||[])}));
-              const res=await gasPost({action:'bulk',tasks:flatTasks});
+              const res=await gasPost({action:'bulk',tasks:tasks});
               if(res.success){setBadge('live');toast('SYNCED TO GAS')}
               else setBadge('offline');
             }
