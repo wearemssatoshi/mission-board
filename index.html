@@ -344,6 +344,36 @@
     .conn-badge.syncing { background:var(--gold-dim); color:var(--gold); border:1px solid rgba(200,164,94,0.15) }
     .conn-badge.syncing .conn-dot { background:var(--gold); animation:pulse 1s ease infinite }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ==========  DAILY VIEW  ========== */
+    .daily { display:none; padding:0 40px 40px }
+    .daily.on { display:block }
+    .daily-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px }
+    .daily-date { font-size:13px; color:var(--text-dim); font-weight:500 }
+    .daily-progress { font-size:12px; color:var(--gold); font-weight:600 }
+    .daily-add { display:flex; gap:8px; margin-bottom:20px }
+    .daily-add input { flex:1; padding:10px 14px; border:1px solid var(--border); background:var(--surface-2); font-family:'Inter',sans-serif; font-size:13px; color:var(--text); border-radius:var(--r); outline:none; transition:border-color var(--t) }
+    .daily-add input:focus { border-color:var(--gold) }
+    .daily-add input::placeholder { color:var(--text-muted) }
+    .daily-add button { padding:10px 16px; border:none; background:var(--gold); color:#000; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; border-radius:var(--r); cursor:pointer; letter-spacing:0.04em; transition:all var(--t) }
+    .daily-add button:hover { background:var(--gold-light); box-shadow:0 0 16px var(--gold-glow) }
+    .daily-label { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; padding:12px 0 6px; border-bottom:1px solid var(--border); margin-bottom:4px }
+    .daily-list { display:flex; flex-direction:column; gap:2px }
+    .d-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--r); transition:all var(--t); cursor:pointer; border:1px solid transparent }
+    .d-item:hover { background:var(--surface-2); border-color:var(--border) }
+    .d-check { width:18px; height:18px; border:2px solid var(--border-light); border-radius:4px; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all var(--t); cursor:pointer }
+    .d-check:hover { border-color:var(--gold) }
+    .d-check.checked { background:var(--gold); border-color:var(--gold) }
+    .d-check.checked svg { display:block }
+    .d-check svg { width:12px; height:12px; stroke:#000; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; display:none }
+    .d-title { font-size:13px; color:var(--text); flex:1 }
+    .d-item.done .d-title { text-decoration:line-through; color:var(--text-muted) }
+    .d-item.done { opacity:.5 }
+    .d-rm { width:20px; height:20px; border:none; background:none; color:var(--text-muted); cursor:pointer; border-radius:var(--r); display:flex; align-items:center; justify-content:center; opacity:0; transition:all var(--t) }
+    .d-rm svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+    .d-item:hover .d-rm { opacity:1 }
+    .d-rm:hover { color:var(--red); background:var(--red-dim) }
+    .d-empty { text-align:center; padding:32px; color:var(--text-muted); font-size:12px }
   </style>
 </head>
 <body>
@@ -363,6 +393,10 @@
       <div class="s-item active" data-view="board">
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         Board
+      </div>
+      <div class="s-item" data-view="daily">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><polyline points="12 6 12 12 16 14"/></svg>
+        Daily
       </div>
     </div>
 
@@ -472,6 +506,22 @@
         <div class="col-tasks" id="tDone"></div>
       </div>
     </div>
+
+    <!-- DAILY VIEW -->
+    <div class="daily" id="dailyView">
+      <div class="daily-header">
+        <span class="daily-date" id="dailyDate"></span>
+        <span class="daily-progress" id="dailyProg">0/0</span>
+      </div>
+      <div class="daily-add">
+        <input type="text" id="dailyInput" placeholder="Add daily task...">
+        <button id="dailyAddBtn">ADD</button>
+      </div>
+      <div class="daily-label">PENDING</div>
+      <div class="daily-list" id="dailyPending"></div>
+      <div class="daily-label" style="margin-top:16px">COMPLETED</div>
+      <div class="daily-list" id="dailyDone"></div>
+    </div>
   </main>
 
   <!-- MODAL -->
@@ -486,6 +536,10 @@
         <div class="m-row">
           <span class="m-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Status</span>
           <div class="m-val"><select class="m-sel" id="inStatus"><option value="todo">Todo</option><option value="in-progress">In Progress</option><option value="done">Done</option></select></div>
+        </div>
+        <div class="m-row">
+          <span class="m-label"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><polyline points="12 6 12 12 16 14"/></svg>Daily</span>
+          <div class="m-val"><label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text);cursor:pointer"><input type="checkbox" id="inDaily" style="accent-color:var(--gold);width:16px;height:16px;cursor:pointer"> Repeat daily</label></div>
         </div>
         <div class="m-row">
           <span class="m-label"><svg viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Priority</span>
@@ -528,7 +582,7 @@
     // ★ SATがGASデプロイ後、ここにURLを貼る
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbwh46bXQlE4yaj2PS7hc41zvMLfB8MkcX8ZEU5_ePqqhA6mpwjRvByJ0hNCWNrRh4xw/exec';
     const SK = 'mission_board_tasks';
-    let tasks=[], eid=null, fCat='all', fOwn='all', mLinks=[], gasLive=false;
+    let tasks=[], eid=null, fCat='all', fOwn='all', mLinks=[], gasLive=false, curView='board';
 
     // ═══════════════ INIT ═══════════════
     async function init(){
@@ -637,8 +691,8 @@
     // ═══════════════ TASK OPERATIONS ═══════════════
     function gid(){return 'mb-'+Date.now().toString(36)+'-'+Math.random().toString(36).substr(2,5)}
 
-    async function addTask(t,c,p,o,s,n,links){
-      const task={id:gid(),title:t,category:c,priority:p,status:s,createdBy:o,createdAt:new Date().toISOString(),completedAt:s==='done'?new Date().toISOString():null,notes:n||'',links:links||[]};
+    async function addTask(t,c,p,o,s,n,links,isDaily){
+      const task={id:gid(),title:t,category:c,priority:p,status:s,createdBy:o,createdAt:new Date().toISOString(),completedAt:s==='done'?new Date().toISOString():null,notes:n||'',links:links||[],isDaily:!!isDaily,dailyChecked:null};
       tasks.push(task);
       saveLocal();render();toast('TASK CREATED');
       await gasSaveTask(task);
@@ -679,6 +733,7 @@
       document.getElementById('sSvd').textContent=tasks.filter(t=>t.category==='SVD-OS').length;
       document.getElementById('sPer').textContent=tasks.filter(t=>t.category==='Personal').length;
       document.getElementById('sSes').textContent=tasks.filter(t=>t.category==='Session').length;
+      renderDaily();
     }
 
     function rCol(id,items){
@@ -727,9 +782,9 @@
     function openM(edit){document.getElementById('ov').classList.add('on');document.getElementById('mSave').textContent=edit?'SAVE':'CREATE';if(!edit){resF();eid=null}setTimeout(()=>document.getElementById('inTitle').focus(),120)}
     function openS(s){resF();document.getElementById('inStatus').value=s;eid=null;openM(false)}
     function closeM(){document.getElementById('ov').classList.remove('on');eid=null}
-    function resF(){document.getElementById('inTitle').value='';document.getElementById('inCat').value='SVD-OS';document.getElementById('inPri').value='medium';document.getElementById('inOwn').value='SAT';document.getElementById('inStatus').value='todo';document.getElementById('inNotes').value='';document.getElementById('inLinkUrl').value='';mLinks=[];rMLinks()}
+    function resF(){document.getElementById('inTitle').value='';document.getElementById('inCat').value='SVD-OS';document.getElementById('inPri').value='medium';document.getElementById('inOwn').value='SAT';document.getElementById('inStatus').value='todo';document.getElementById('inNotes').value='';document.getElementById('inLinkUrl').value='';document.getElementById('inDaily').checked=false;mLinks=[];rMLinks()}
 
-    function editT(id){event.stopPropagation();const t=tasks.find(x=>x.id===id);if(!t)return;eid=id;document.getElementById('inTitle').value=t.title;document.getElementById('inCat').value=t.category;document.getElementById('inPri').value=t.priority;document.getElementById('inOwn').value=t.createdBy;document.getElementById('inStatus').value=t.status;document.getElementById('inNotes').value=t.notes||'';mLinks=[...(t.links||[])];rMLinks();openM(true)}
+    function editT(id){event.stopPropagation();const t=tasks.find(x=>x.id===id);if(!t)return;eid=id;document.getElementById('inTitle').value=t.title;document.getElementById('inCat').value=t.category;document.getElementById('inPri').value=t.priority;document.getElementById('inOwn').value=t.createdBy;document.getElementById('inStatus').value=t.status;document.getElementById('inNotes').value=t.notes||'';document.getElementById('inDaily').checked=!!t.isDaily;mLinks=[...(t.links||[])];rMLinks();openM(true)}
     function delT(id){event.stopPropagation();delTask(id)}
 
     // Modal link management
@@ -746,9 +801,9 @@
     async function doSave(){
       const ti=document.getElementById('inTitle').value.trim();if(!ti)return;
       const pending=document.getElementById('inLinkUrl').value.trim();if(pending)mLinks.push(pending);
-      const c=document.getElementById('inCat').value,p=document.getElementById('inPri').value,o=document.getElementById('inOwn').value,s=document.getElementById('inStatus').value,n=document.getElementById('inNotes').value.trim();
-      if(eid){await updTask(eid,{title:ti,category:c,priority:p,createdBy:o,status:s,notes:n,links:[...mLinks]});toast('UPDATED')}
-      else await addTask(ti,c,p,o,s,n,[...mLinks]);
+      const c=document.getElementById('inCat').value,p=document.getElementById('inPri').value,o=document.getElementById('inOwn').value,s=document.getElementById('inStatus').value,n=document.getElementById('inNotes').value.trim(),daily=document.getElementById('inDaily').checked;
+      if(eid){await updTask(eid,{title:ti,category:c,priority:p,createdBy:o,status:s,notes:n,links:[...mLinks],isDaily:daily});toast('UPDATED')}
+      else await addTask(ti,c,p,o,s,n,[...mLinks],daily);
       closeM()
     }
 
@@ -777,6 +832,59 @@
       document.getElementById('sImp').addEventListener('click',()=>document.getElementById('fIn').click());
       document.getElementById('fIn').addEventListener('change',e=>{if(e.target.files[0]){impJ(e.target.files[0]);e.target.value=''}});
       document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM();const t=document.activeElement.tagName;if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&t!=='INPUT'&&t!=='TEXTAREA'&&t!=='SELECT'){e.preventDefault();openM()}});
+      // View switcher
+      document.querySelectorAll('[data-view]').forEach(e=>e.addEventListener('click',()=>switchView(e.dataset.view)));
+      // Daily add
+      document.getElementById('dailyAddBtn').addEventListener('click',addDailyTask);
+      document.getElementById('dailyInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addDailyTask()}});
+    }
+
+    // ═══════════════ VIEW SWITCHING ═══════════════
+    function switchView(view){
+      curView=view;
+      document.querySelectorAll('[data-view]').forEach(e=>e.classList.toggle('active',e.dataset.view===view));
+      // Board elements
+      const boardEls=['stats','toolbar','board'];
+      boardEls.forEach(id=>{const el=document.querySelector('.'+id)||document.getElementById(id);if(el)el.style.display=view==='board'?'':'none'});
+      document.getElementById('dailyView').classList.toggle('on',view==='daily');
+      if(view==='daily')renderDaily();
+    }
+
+    // ═══════════════ DAILY LOGIC ═══════════════
+    function todayStr(){const d=new Date();const o=9*60;const u=d.getTime()+(d.getTimezoneOffset()*60000);const j=new Date(u+(o*60000));return j.getFullYear()+'-'+String(j.getMonth()+1).padStart(2,'0')+'-'+String(j.getDate()).padStart(2,'0')}
+
+    function isDailyDone(t){return t.dailyChecked===todayStr()}
+
+    function renderDaily(){
+      const today=todayStr();
+      document.getElementById('dailyDate').textContent=today;
+      const dt=tasks.filter(t=>t.isDaily);
+      const pending=dt.filter(t=>!isDailyDone(t));
+      const done=dt.filter(t=>isDailyDone(t));
+      document.getElementById('dailyProg').textContent=done.length+'/'+dt.length;
+
+      const pEl=document.getElementById('dailyPending');
+      const dEl=document.getElementById('dailyDone');
+
+      if(!dt.length){pEl.innerHTML='<div class="d-empty">No daily tasks yet. Add one above!</div>';dEl.innerHTML='';return}
+
+      pEl.innerHTML=pending.map(t=>'<div class="d-item" onclick="toggleDaily(\''+t.id+'\')">'+'<div class="d-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>'+'<span class="d-title">'+esc(t.title)+'</span>'+'<button class="d-rm" onclick="event.stopPropagation();delT(\''+t.id+'\')" title="Remove"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'+'</div>').join('');
+
+      dEl.innerHTML=done.map(t=>'<div class="d-item done" onclick="toggleDaily(\''+t.id+'\')">'+'<div class="d-check checked"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>'+'<span class="d-title">'+esc(t.title)+'</span>'+'</div>').join('');
+    }
+
+    async function toggleDaily(id){
+      const t=tasks.find(x=>x.id===id);if(!t)return;
+      t.dailyChecked=isDailyDone(t)?null:todayStr();
+      saveLocal();renderDaily();
+      await gasSaveTask(t);
+    }
+
+    async function addDailyTask(){
+      const inp=document.getElementById('dailyInput');
+      const v=inp.value.trim();if(!v)return;
+      await addTask(v,'SVD-OS','medium','SAT','todo','',[], true);
+      inp.value='';
     }
 
     init();
