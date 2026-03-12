@@ -34,10 +34,16 @@ function doGet(e) {
         result = listTasks(ss);
         break;
       case 'ping':
-        result = { success: true, message: 'MISSION BOARD ONLINE', timestamp: getJST() };
+        result = { success: true, message: 'MISSION BOARD ONLINE', version: 7, timestamp: getJST() };
         break;
       case 'listBm':
         result = listBookmarks(ss);
+        break;
+      case 'listRaw':
+        result = listRawLinks(ss);
+        break;
+      case 'repair':
+        result = repairShiftedData(ss);
         break;
       default:
         result = { error: 'Unknown action: ' + action };
@@ -252,12 +258,29 @@ function bulkSave(ss, tasks) {
 // ═══════════════ UTILITIES ═══════════════
 
 function getOrCreateSheet(ss) {
+  const EXPECTED_HEADERS = ['id', 'title', 'category', 'priority', 'status', 'createdBy', 'createdAt', 'completedAt', 'notes', 'links', 'isDaily', 'dailyChecked'];
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
-    sheet.appendRow(['id', 'title', 'category', 'priority', 'status', 'createdBy', 'createdAt', 'completedAt', 'notes', 'links', 'isDaily', 'dailyChecked']);
-    sheet.getRange('A:A').setNumberFormat('@'); // Force text format for IDs
+    sheet.appendRow(EXPECTED_HEADERS);
+    sheet.getRange('A:A').setNumberFormat('@');
     SpreadsheetApp.flush();
+  } else {
+    // Auto-repair: ensure headers match expected schema
+    const lastCol = sheet.getLastColumn();
+    if (lastCol > 0) {
+      const currentHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(String);
+      // Check if headers don't match expected
+      const headersMatch = EXPECTED_HEADERS.every((h, i) => currentHeaders[i] === h);
+      if (!headersMatch || currentHeaders.length < EXPECTED_HEADERS.length) {
+        // Force correct headers (data rows are already 12 cols from bulkSave)
+        while (sheet.getMaxColumns() < EXPECTED_HEADERS.length) {
+          sheet.insertColumnAfter(sheet.getMaxColumns());
+        }
+        sheet.getRange(1, 1, 1, EXPECTED_HEADERS.length).setValues([EXPECTED_HEADERS]);
+        SpreadsheetApp.flush();
+      }
+    }
   }
   return sheet;
 }
@@ -280,6 +303,72 @@ function parseLinks(val) {
     guard++;
   }
   return Array.isArray(result) ? result : [];
+}
+
+// Debug: return raw cell values for links column
+function listRawLinks(ss) {
+  const sheet = getOrCreateSheet(ss);
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) return { success: true, raw: [], headers: data[0] };
+  const headers = data[0];
+  const hMap = {};
+  headers.forEach((h, i) => hMap[h] = i);
+  const raw = data.slice(1).map(row => ({
+    id: String(row[0] || ''),
+    title: String(row[1] || '').substring(0, 30),
+    linksIdx: hMap['links'],
+    linksRaw: row[hMap['links']],
+    linksType: typeof row[hMap['links']],
+    allColumns: row.map((cell, i) => ({ col: i, header: headers[i] || '???', value: String(cell).substring(0, 60), type: typeof cell }))
+  })).slice(0, 3); // only first 3 rows for brevity
+  return { success: true, version: 7, headers: headers, linksIndex: hMap['links'], raw: raw };
+}
+
+// One-time repair: v9 shift pushed links data from col9→col10
+function repairShiftedData(ss) {
+  const EXPECTED_HEADERS = ['id', 'title', 'category', 'priority', 'status', 'createdBy', 'createdAt', 'completedAt', 'notes', 'links', 'isDaily', 'dailyChecked'];
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) return { error: 'Sheet not found' };
+  
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    if (lastRow <= 1) return { success: true, message: 'No data rows' };
+    
+    const data = sheet.getDataRange().getValues();
+    let repaired = 0;
+    
+    for (let r = 1; r < data.length; r++) {
+      const row = data[r];
+      // Detect: col7=empty(extra), col9=empty(links header slot), col10=has link data
+      var col7 = String(row[7] || '');
+      var col9 = String(row[9] || '');
+      var col10 = String(row[10] || '');
+      if (col7 === '' && col9 === '' && col10.startsWith('[')) {
+        // Rebuild correctly: keep 0-6, col7=completedAt(empty), col8=notes, col9=links(from col10), col10=isDaily(from col11)
+        var fixed = [
+          row[0], row[1], row[2], row[3], row[4], row[5], row[6],
+          '',               // completedAt
+          String(row[8]||''), // notes
+          col10,            // links (move from col10 back to col9)
+          row[11] !== undefined ? String(row[11]) : 'false', // isDaily
+          ''                // dailyChecked
+        ];
+        sheet.getRange(r + 1, 1, 1, EXPECTED_HEADERS.length).setValues([fixed]);
+        repaired++;
+      }
+    }
+    
+    sheet.getRange(1, 1, 1, EXPECTED_HEADERS.length).setValues([EXPECTED_HEADERS]);
+    SpreadsheetApp.flush();
+    return { success: true, repaired: repaired, total: lastRow - 1 };
+  } catch (err) {
+    return { error: err.message };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ═══════════════ BOOKMARK OPERATIONS ═══════════════
