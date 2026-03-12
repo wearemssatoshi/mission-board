@@ -278,13 +278,31 @@ function parseLinks(val) {
 
 // ═══════════════ BOOKMARK OPERATIONS ═══════════════
 
+const BM_HEADERS = ['id', 'name', 'links', 'notes', 'category', 'createdAt'];
+
 function getOrCreateBmSheet(ss) {
   let sheet = ss.getSheetByName(BM_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(BM_SHEET_NAME);
-    sheet.appendRow(['id', 'name', 'url', 'category', 'createdAt']);
+    sheet.appendRow(BM_HEADERS);
     sheet.getRange('A:A').setNumberFormat('@');
     SpreadsheetApp.flush();
+  } else {
+    // Migrate old schema: rename 'url' → 'links', add 'notes' if missing
+    const h = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const urlIdx = h.indexOf('url');
+    const linksIdx = h.indexOf('links');
+    const notesIdx = h.indexOf('notes');
+    if (urlIdx >= 0 && linksIdx < 0) {
+      sheet.getRange(1, urlIdx + 1).setValue('links');
+    }
+    if (notesIdx < 0) {
+      const catIdx = h.indexOf('category');
+      if (catIdx >= 0) {
+        sheet.insertColumnAfter(catIdx < 0 ? h.length : (urlIdx >= 0 ? urlIdx + 1 : h.length));
+        sheet.getRange(1, (urlIdx >= 0 ? urlIdx + 2 : h.length + 1)).setValue('notes');
+      }
+    }
   }
   return sheet;
 }
@@ -301,16 +319,17 @@ function listBookmarks(ss) {
   const bookmarks = data.slice(1).map(row => ({
     id:        String(row[hMap['id']] || ''),
     name:      String(row[hMap['name']] || ''),
-    url:       String(row[hMap['url']] || ''),
+    links:     String(row[hMap['links']] || '[]'),
+    notes:     String(row[hMap['notes'] !== undefined ? hMap['notes'] : -1] || ''),
     category:  VALID_CATS.includes(String(row[hMap['category']] || '')) ? String(row[hMap['category']]) : 'SVD-OS',
     createdAt: String(row[hMap['createdAt']] || '')
-  })).filter(b => b.id && b.url);
+  })).filter(b => b.id);
   
   return { success: true, bookmarks: bookmarks };
 }
 
 function saveBookmark(ss, bm) {
-  if (!bm || !bm.url) return { error: 'URL is required' };
+  if (!bm) return { error: 'Bookmark data is required' };
   
   const lock = LockService.getScriptLock();
   try {
@@ -319,17 +338,24 @@ function saveBookmark(ss, bm) {
     if (!bm.id) bm.id = 'bm-' + new Date().getTime().toString(36) + '-' + Math.random().toString(36).substr(2, 4);
     if (!bm.createdAt) bm.createdAt = getJST();
     
+    const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const hMap = {};
+    headers.forEach((h, i) => hMap[h] = i);
+    
     const data = sheet.getDataRange().getValues();
     const idCol = data.map(r => String(r[0]));
     const existingRow = idCol.indexOf(bm.id);
     
-    const rowData = [
-      bm.id,
-      bm.name || '',
-      bm.url,
-      VALID_CATS.includes(bm.category) ? bm.category : 'SVD-OS',
-      bm.createdAt
-    ];
+    // Build row matching header order
+    const rowData = headers.map(h => {
+      if (h === 'id') return bm.id;
+      if (h === 'name') return bm.name || '';
+      if (h === 'links') return typeof bm.links === 'string' ? bm.links : JSON.stringify(bm.links || []);
+      if (h === 'notes') return bm.notes || '';
+      if (h === 'category') return VALID_CATS.includes(bm.category) ? bm.category : 'SVD-OS';
+      if (h === 'createdAt') return bm.createdAt;
+      return '';
+    });
     
     if (existingRow > 0) {
       sheet.getRange(existingRow + 1, 1, 1, rowData.length).setValues([rowData]);
@@ -379,13 +405,17 @@ function bulkSaveBookmarks(ss, bookmarks) {
     lock.waitLock(15000);
     const sheet = getOrCreateBmSheet(ss);
     
+    // Ensure headers match new schema
+    sheet.getRange(1, 1, 1, BM_HEADERS.length).setValues([BM_HEADERS]);
+    
     const lastRow = sheet.getLastRow();
     if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
     
     const rows = bookmarks.map(b => [
       b.id || 'bm-' + new Date().getTime().toString(36) + '-' + Math.random().toString(36).substr(2, 4),
       b.name || '',
-      b.url || '',
+      typeof b.links === 'string' ? b.links : JSON.stringify(b.links || []),
+      b.notes || '',
       VALID_CATS.includes(b.category) ? b.category : 'SVD-OS',
       b.createdAt || getJST()
     ]);
