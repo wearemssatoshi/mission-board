@@ -323,14 +323,96 @@
     .card { animation:cIn .2s ease }
     @keyframes cIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:translateY(0) } }
 
+    /* ========== HAMBURGER MENU BUTTON ========== */
+    .ham {
+      display:none; position:fixed; top:12px; left:12px; z-index:250;
+      width:40px; height:40px; border:none; background:var(--surface-2);
+      border-radius:var(--r); cursor:pointer; align-items:center; justify-content:center;
+      box-shadow:var(--shadow-card); border:1px solid var(--border); transition:all var(--t);
+    }
+    .ham svg { width:18px; height:18px; stroke:var(--gold); fill:none; stroke-width:2; stroke-linecap:round }
+    .ham:hover { background:var(--gold-dim); border-color:var(--gold) }
+    .ham.active svg { stroke:var(--text) }
+
+    /* Sidebar overlay for mobile */
+    .s-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6);
+      backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);
+      z-index:190; opacity:0; transition:opacity .2s ease;
+    }
+    .s-overlay.on { opacity:1 }
+
     @media(max-width:900px) {
-      .sidebar { transform:translateX(-100%) }
+      .ham { display:flex }
+      .s-overlay.on { display:block }
+
+      /* Sidebar: slide-in from left */
+      .sidebar {
+        transform:translateX(-100%); transition:transform .28s cubic-bezier(.16,1,.3,1);
+        box-shadow:none; width:260px;
+      }
+      .sidebar.open {
+        transform:translateX(0); box-shadow:4px 0 24px rgba(0,0,0,0.5);
+      }
+
       .main { margin-left:0 }
-      .page-head,.stats,.toolbar,.board { padding-left:20px; padding-right:20px }
-      .page-head { padding-top:32px }
-      .board { flex-direction:column }
+
+      /* Page head */
+      .page-head { padding:56px 16px 0 }
+      .page-title { font-size:20px }
+      .page-sub { font-size:10px }
+
+      /* Stats row */
+      .stats { padding:10px 16px; gap:10px; flex-wrap:wrap }
+      .stat { font-size:11px }
+      .stat-bar { margin-left:0; width:100%; margin-top:4px }
+      .bar-track { flex:1; width:auto }
+
+      /* Toolbar: horizontal scroll */
+      .toolbar {
+        padding:8px 16px; gap:2px; overflow-x:auto;
+        -webkit-overflow-scrolling:touch; scrollbar-width:none;
+      }
+      .toolbar::-webkit-scrollbar { display:none }
+      .tb { padding:6px 10px; font-size:11px; flex-shrink:0 }
+      .btn-new { padding:7px 12px; font-size:10px }
+      .btn-new svg { width:11px; height:11px }
+
+      /* Board: vertical stack */
+      .board { flex-direction:column; padding:16px 12px 32px; gap:0 }
       .col+.col { margin-left:0; margin-top:16px }
-      .col { max-width:none }
+      .col { max-width:none; min-width:auto }
+
+      /* Cards: touch-friendly sizing */
+      .card { padding:14px; }
+      .card-title { font-size:14px }
+      .card-acts { opacity:1 }
+      .act { width:32px; height:32px }
+      .col-add { opacity:1; width:28px; height:28px }
+
+      /* Modal: full-width on mobile */
+      .ov { padding-top:0; align-items:flex-end }
+      .modal {
+        width:100%; max-width:100%; max-height:92vh;
+        border-radius:var(--r-lg) var(--r-lg) 0 0;
+        border-bottom:none;
+      }
+      .m-head { padding:16px 16px 0 }
+      .m-title-in { font-size:16px }
+      .m-div { margin:12px 16px }
+      .m-props { padding:0 16px }
+      .m-body { padding:8px 16px 16px }
+      .m-foot { padding:10px 16px }
+      .m-links-section { padding:0 16px 8px }
+
+      /* Daily view */
+      .daily { padding:0 16px 32px }
+      .daily-add input { font-size:14px; padding:12px }
+      .daily-add button { padding:12px 14px; font-size:11px }
+      .d-item { padding:12px; gap:12px }
+      .d-check { width:22px; height:22px }
+      .d-title { font-size:14px }
+      .d-rm { width:28px; height:28px; opacity:0.6 }
     }
     #fIn { display:none }
 
@@ -374,9 +456,124 @@
     .d-item:hover .d-rm { opacity:1 }
     .d-rm:hover { color:var(--red); background:var(--red-dim) }
     .d-empty { text-align:center; padding:32px; color:var(--text-muted); font-size:12px }
+
+    /* ==========  BOOKMARKS VIEW  ========== */
+    .bookmarks { display:none; padding:0 40px 40px }
+    .bookmarks.on { display:block }
+    .bm-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap }
+    .bm-add-form { display:flex; gap:8px; flex:1; min-width:300px }
+    .bm-add-form input { flex:1; padding:10px 14px; border:1px solid var(--border); background:var(--surface-2); font-family:'Inter',sans-serif; font-size:13px; color:var(--text); border-radius:var(--r); outline:none; transition:border-color var(--t) }
+    .bm-add-form input:focus { border-color:var(--gold) }
+    .bm-add-form input::placeholder { color:var(--text-muted) }
+    .bm-add-form select { padding:10px 12px; border:1px solid var(--border); background:var(--surface-2); font-family:'Inter',sans-serif; font-size:12px; color:var(--text); border-radius:var(--r); outline:none; cursor:pointer; appearance:none; min-width:100px }
+    .bm-add-form select option { background:var(--surface-1); color:var(--text) }
+    .bm-add-form button { padding:10px 16px; border:none; background:var(--gold); color:#000; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; border-radius:var(--r); cursor:pointer; letter-spacing:0.04em; transition:all var(--t); white-space:nowrap }
+    .bm-add-form button:hover { background:var(--gold-light); box-shadow:0 0 16px var(--gold-glow) }
+    .bm-section { margin-bottom:24px }
+    .bm-section-label { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; padding:8px 0; border-bottom:1px solid var(--border); margin-bottom:10px; display:flex; align-items:center; gap:6px }
+    .bm-section-label .bm-cnt { font-size:10px; color:var(--text-muted); font-weight:500 }
+    .bm-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:8px }
+    .bm-card { display:flex; align-items:center; gap:10px; padding:12px 14px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); cursor:pointer; transition:all var(--t); position:relative; text-decoration:none; overflow:hidden }
+    .bm-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--gold-gradient); opacity:0; transition:opacity var(--t) }
+    .bm-card:hover { border-color:var(--border-light); transform:translateY(-2px); box-shadow:var(--shadow-lift) }
+    .bm-card:hover::before { opacity:1 }
+    .bm-favicon { width:20px; height:20px; border-radius:4px; flex-shrink:0; background:var(--surface-3); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; color:var(--gold); overflow:hidden }
+    .bm-favicon img { width:100%; height:100%; object-fit:contain }
+    .bm-info { flex:1; min-width:0 }
+    .bm-name { font-size:13px; font-weight:500; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .bm-url { font-size:10px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px }
+    .bm-actions { display:flex; gap:2px; opacity:0; transition:opacity .12s; flex-shrink:0 }
+    .bm-card:hover .bm-actions { opacity:1 }
+    .bm-link-cnt { font-size:9px; color:var(--text-muted); background:var(--surface-3); padding:1px 6px; border-radius:10px; flex-shrink:0 }
+    .bm-empty { text-align:center; padding:32px; color:var(--text-muted); font-size:12px }
+
+    /* Bookmark Detail Modal */
+    .bm-ov { position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); z-index:1000; display:flex; align-items:flex-start; justify-content:center; padding-top:12vh; opacity:0; visibility:hidden; transition:all .15s ease }
+    .bm-ov.on { opacity:1; visibility:visible }
+    .bm-modal { background:var(--surface-1); border:1px solid var(--border-light); border-radius:var(--r-lg); width:520px; max-width:90vw; max-height:80vh; overflow-y:auto; box-shadow:var(--shadow-modal); transform:translateY(8px) scale(.98); transition:all .25s cubic-bezier(.16,1,.3,1) }
+    .bm-ov.on .bm-modal { transform:translateY(0) scale(1) }
+    .bm-m-head { display:flex; align-items:center; padding:20px 24px 0; gap:12px }
+    .bm-m-fav { width:28px; height:28px; border-radius:6px; background:var(--surface-3); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--gold); overflow:hidden; flex-shrink:0 }
+    .bm-m-fav img { width:100%; height:100%; object-fit:contain }
+    .bm-m-title { flex:1; border:none; background:none; font-family:'Inter',sans-serif; font-size:18px; font-weight:600; color:var(--text); outline:none }
+    .bm-m-title::placeholder { color:var(--text-muted) }
+    .bm-m-close { width:28px; height:28px; border:none; background:none; color:var(--text-muted); cursor:pointer; border-radius:var(--r); display:flex; align-items:center; justify-content:center }
+    .bm-m-close svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+    .bm-m-close:hover { background:var(--gold-dim); color:var(--gold) }
+    .bm-m-cat { display:flex; align-items:center; gap:6px; padding:8px 24px }
+    .bm-m-cat select { padding:3px 8px; border:1px solid var(--border); background:var(--surface-2); font-family:'Inter',sans-serif; font-size:11px; color:var(--text-sub); border-radius:var(--r); outline:none; cursor:pointer; appearance:none }
+    .bm-m-cat select option { background:var(--surface-1) }
+    .bm-m-div { height:1px; background:var(--border); margin:6px 24px }
+    .bm-m-section { padding:8px 24px }
+    .bm-m-label { font-size:10px; font-weight:700; color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; gap:6px }
+    .bm-m-label svg { width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; opacity:.5 }
+    .bm-m-links { display:flex; flex-direction:column; gap:4px }
+    .bm-m-link { display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r); transition:all var(--t); text-decoration:none; color:var(--text) }
+    .bm-m-link:hover { border-color:var(--gold); transform:translateX(2px) }
+    .bm-m-link-fav { width:16px; height:16px; border-radius:3px; flex-shrink:0; overflow:hidden }
+    .bm-m-link-fav img { width:100%; height:100%; object-fit:contain }
+    .bm-m-link-info { flex:1; min-width:0 }
+    .bm-m-link-label { font-size:12px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .bm-m-link-url { font-size:10px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+    .bm-m-link-rm { width:20px; height:20px; border:none; background:none; color:var(--text-muted); cursor:pointer; border-radius:var(--r); display:flex; align-items:center; justify-content:center; opacity:0; transition:all var(--t); flex-shrink:0 }
+    .bm-m-link:hover .bm-m-link-rm { opacity:1 }
+    .bm-m-link-rm:hover { color:var(--red); background:var(--red-dim) }
+    .bm-m-link-rm svg { width:12px; height:12px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+    .bm-m-add-link { display:flex; gap:6px; margin-top:6px }
+    .bm-m-add-link input { flex:1; padding:6px 10px; border:1px solid var(--border); background:var(--surface-2); font-family:'Inter',sans-serif; font-size:12px; color:var(--text); border-radius:var(--r); outline:none; transition:border-color var(--t) }
+    .bm-m-add-link input:focus { border-color:var(--gold) }
+    .bm-m-add-link input::placeholder { color:var(--text-muted) }
+    .bm-m-add-link button { padding:6px 12px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-sub); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; border-radius:var(--r); cursor:pointer; transition:all var(--t); white-space:nowrap }
+    .bm-m-add-link button:hover { border-color:var(--gold); color:var(--gold) }
+    .bm-m-notes { width:100%; border:none; background:transparent; font-family:'Inter',sans-serif; font-size:13px; color:var(--text); resize:none; min-height:60px; outline:none; line-height:1.6 }
+    .bm-m-notes::placeholder { color:var(--text-muted) }
+    .bm-m-foot { padding:12px 24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center }
+    .bm-m-del { padding:6px 12px; border:1px solid var(--red-dim); background:none; color:var(--red); font-family:'Inter',sans-serif; font-size:11px; font-weight:600; border-radius:var(--r); cursor:pointer; transition:all var(--t); opacity:.6 }
+    .bm-m-del:hover { opacity:1; background:var(--red-dim) }
+    .bm-m-save { padding:7px 16px; border:none; background:var(--gold); color:#000; font-family:'Inter',sans-serif; font-size:12px; font-weight:700; border-radius:var(--r); cursor:pointer; letter-spacing:0.04em; text-transform:uppercase; transition:all var(--t) }
+    .bm-m-save:hover { background:var(--gold-light); box-shadow:0 0 16px var(--gold-glow); transform:translateY(-1px) }
+    @media(max-width:900px) {
+      .bm-grid { grid-template-columns:1fr }
+      .bm-add-form { min-width:auto; flex-direction:column; gap:6px }
+      .bm-add-form input { font-size:14px; padding:12px }
+      .bm-add-form select { padding:12px; font-size:13px }
+      .bm-add-form button { padding:12px; font-size:12px }
+      .bookmarks { padding:0 12px 32px }
+      .bm-toolbar { margin-bottom:12px }
+      .bm-card { padding:14px 12px }
+      .bm-name { font-size:14px }
+      .bm-actions { opacity:1 }
+
+      /* Bookmark modal: full-width bottom sheet */
+      .bm-ov { padding-top:0; align-items:flex-end }
+      .bm-modal {
+        width:100%; max-width:100%; max-height:92vh;
+        border-radius:var(--r-lg) var(--r-lg) 0 0;
+      }
+      .bm-m-head { padding:16px 16px 0 }
+      .bm-m-title { font-size:16px }
+      .bm-m-cat { padding:8px 16px }
+      .bm-m-section { padding:8px 16px }
+      .bm-m-div { margin:6px 16px }
+      .bm-m-foot { padding:12px 16px }
+      .bm-m-link { padding:10px }
+      .bm-m-link-label { font-size:13px }
+      .bm-m-link-rm { opacity:0.6 }
+      .bm-m-notes { font-size:14px; min-height:80px }
+      .bm-m-add-link input { font-size:14px; padding:10px }
+      .bm-m-add-link button { padding:10px 14px }
+    }
   </style>
 </head>
 <body>
+
+  <!-- HAMBURGER MENU -->
+  <button class="ham" id="hamBtn" aria-label="Menu">
+    <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+
+  <!-- SIDEBAR OVERLAY -->
+  <div class="s-overlay" id="sOverlay"></div>
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
@@ -397,6 +594,11 @@
       <div class="s-item" data-view="daily">
         <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/><polyline points="12 6 12 12 16 14"/></svg>
         Daily
+      </div>
+      <div class="s-item" data-view="bookmarks">
+        <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+        Bookmarks
+        <span class="s-cnt" id="sBm">0</span>
       </div>
     </div>
 
@@ -522,6 +724,23 @@
       <div class="daily-label" style="margin-top:16px">COMPLETED</div>
       <div class="daily-list" id="dailyDone"></div>
     </div>
+
+    <!-- BOOKMARKS VIEW -->
+    <div class="bookmarks" id="bmView">
+      <div class="bm-toolbar">
+        <div class="bm-add-form">
+          <input type="text" id="bmNameIn" placeholder="Name (e.g. SVD HomePage)">
+          <input type="url" id="bmUrlIn" placeholder="https://...">
+          <select id="bmCatIn">
+            <option value="SVD-OS">SVD-OS</option>
+            <option value="Personal">Personal</option>
+            <option value="Session">Session</option>
+          </select>
+          <button id="bmAddBtn">ADD</button>
+        </div>
+      </div>
+      <div id="bmContent"></div>
+    </div>
   </main>
 
   <!-- MODAL -->
@@ -565,11 +784,48 @@
           <button class="m-link-add-btn" id="btnAddLink">ADD</button>
         </div>
         <div class="m-link-list" id="mLinkList"></div>
+      </div>
       <div class="m-div"></div>
       <div class="m-body"><textarea class="m-ta" id="inNotes" placeholder="Notes..."></textarea></div>
       <div class="m-foot">
         <button class="m-btn m-ghost" id="mCancel">CANCEL</button>
         <button class="m-btn m-primary" id="mSave">CREATE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOOKMARK DETAIL MODAL -->
+  <div class="bm-ov" id="bmOv">
+    <div class="bm-modal">
+      <div class="bm-m-head">
+        <div class="bm-m-fav" id="bmMFav"></div>
+        <input class="bm-m-title" type="text" id="bmMTitle" placeholder="Bookmark name">
+        <button class="bm-m-close" id="bmMClose"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="bm-m-cat">
+        <select id="bmMCat">
+          <option value="SVD-OS">SVD-OS</option>
+          <option value="Personal">Personal</option>
+          <option value="Session">Session</option>
+        </select>
+      </div>
+      <div class="bm-m-div"></div>
+      <div class="bm-m-section">
+        <div class="bm-m-label"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>LINKS</div>
+        <div class="bm-m-links" id="bmMLinks"></div>
+        <div class="bm-m-add-link">
+          <input type="url" id="bmMLinkIn" placeholder="https://...">
+          <button id="bmMLinkAdd">ADD</button>
+        </div>
+      </div>
+      <div class="bm-m-div"></div>
+      <div class="bm-m-section">
+        <div class="bm-m-label"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>NOTES</div>
+        <textarea class="bm-m-notes" id="bmMNotes" placeholder="Add notes..."></textarea>
+      </div>
+      <div class="bm-m-foot">
+        <button class="bm-m-del" id="bmMDel">DELETE</button>
+        <button class="bm-m-save" id="bmMSave">SAVE</button>
       </div>
     </div>
   </div>
@@ -580,18 +836,54 @@
   <script>
     // ═══════════════ CONFIG ═══════════════
     // ★ SATがGASデプロイ後、ここにURLを貼る
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwh46bXQlE4yaj2PS7hc41zvMLfB8MkcX8ZEU5_ePqqhA6mpwjRvByJ0hNCWNrRh4xw/exec';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbwjn8OVTheIUFmBMeCEhZ7fmKwcGvYjm_0KxuucXNOZqj2VZhRbiaf3sHEjCL8xEu8Q/exec';
     const SK = 'mission_board_tasks';
+    const BK = 'mission_board_bookmarks';
     let tasks=[], eid=null, fCat='all', fOwn='all', mLinks=[], gasLive=false, curView='board';
+    let bookmarks=[];
+
+    // ═══════════════ ROLE SYSTEM ═══════════════
+    const ROLE = new URLSearchParams(window.location.search).get('role') || 'admin';
+    const IS_MANAGER = ROLE === 'manager';
+    const ALLOWED_CATS = IS_MANAGER ? ['SVD-OS'] : ['SVD-OS','Personal','Session'];
 
     // ═══════════════ INIT ═══════════════
     async function init(){
       loadLocal();
+      loadBookmarks();
       migrate();
+      applyRole();
       render();
+      renderBookmarks();
       bind();
       if(GAS_URL) await syncFromGAS();
       else setBadge('offline');
+    }
+
+    function applyRole(){
+      if(!IS_MANAGER) return;
+      // Force SVD-OS filter
+      fCat='SVD-OS';
+      // Hide sidebar elements managers shouldn't see
+      document.querySelectorAll('[data-sidebar-filter="Personal"],[data-sidebar-filter="Session"],[data-sidebar-filter="all"]').forEach(e=>e.style.display='none');
+      // Hide toolbar filters for Personal/Session
+      document.querySelectorAll('[data-filter="Personal"],[data-filter="Session"]').forEach(e=>e.style.display='none');
+      // Hide owner filter and daily view (SAT-specific)
+      document.querySelectorAll('[data-owner]').forEach(e=>e.style.display='none');
+      document.querySelectorAll('[data-view="daily"]').forEach(e=>e.style.display='none');
+      // Hide export/import
+      const sExp=document.getElementById('sExp');if(sExp)sExp.parentElement.style.display='none';
+      // Hide the tb-div near hidden buttons
+      document.querySelectorAll('.tb-div').forEach(d=>d.style.display='none');
+      // Update footer
+      const footer=document.querySelector('.s-footer');
+      if(footer) footer.innerHTML='<div class="s-ava" style="background:var(--blue)">M</div><span class="s-user">MANAGER</span>';
+      // Update page title
+      document.querySelector('.page-sub').textContent='Restaurant OS — Manager View';
+      // Lock category selects to SVD-OS
+      document.querySelectorAll('#inCat option, #bmCatIn option, #bmMCat option').forEach(o=>{if(o.value!=='SVD-OS')o.remove()});
+      // Set active toolbar filter
+      document.querySelectorAll('[data-filter]').forEach(e=>e.classList.toggle('active',e.dataset.filter==='SVD-OS'));
     }
 
     // ═══════════════ GAS COMMUNICATION ═══════════════
@@ -609,17 +901,32 @@
       }catch(e){console.warn('GAS POST error:',e);return {error:e.message}}
     }
 
+    // Valid categories for defensive validation
+    const VALID_CATS=['SVD-OS','Personal','Session'];
+    const VALID_PRI=['high','medium','low'];
+    const VALID_STATUS=['todo','in-progress','done'];
+
+    function sanitizeTask(t){
+      // Defensive validation to prevent default-fallback corruption
+      if(!VALID_CATS.includes(t.category)) t.category='SVD-OS';
+      if(!VALID_PRI.includes(t.priority)) t.priority='medium';
+      if(!VALID_STATUS.includes(t.status)) t.status='todo';
+      if(!t.links) t.links=[];
+      return t;
+    }
+
     async function syncFromGAS(){
       setBadge('syncing');
       const localTasks=[...tasks]; // preserve local state
       const res=await gasGet();
       if(res.success){
-        const gasTasks=res.tasks||[];
+        const gasTasks=(res.tasks||[]).map(sanitizeTask);
         gasLive=true;
         if(gasTasks.length>0){
           // GAS has data → use it as truth
           tasks=gasTasks;
           saveLocal();render();setBadge('live');
+          console.log('[MB] Synced from GAS:',tasks.length,'tasks. Categories:',tasks.map(t=>t.category));
         } else if(localTasks.length>0){
           // GAS is empty but local has data → upload local to GAS
           tasks=localTasks;
@@ -632,6 +939,8 @@
           // Both empty
           render();setBadge('live');
         }
+        // Also sync bookmarks
+        await syncBmFromGAS();
       } else {
         gasLive=false;
         setBadge('offline');
@@ -714,7 +1023,7 @@
 
     // ═══════════════ RENDER ═══════════════
     function render(){
-      const ft=tasks.filter(t=>(fCat==='all'||t.category===fCat)&&(fOwn==='all'||t.createdBy===fOwn));
+      const ft=tasks.filter(t=>ALLOWED_CATS.includes(t.category)&&(fCat==='all'||t.category===fCat)&&(fOwn==='all'||t.createdBy===fOwn));
       const b={todo:ft.filter(t=>t.status==='todo'),'in-progress':ft.filter(t=>t.status==='in-progress'),done:ft.filter(t=>t.status==='done')};
 
       rCol('tTodo',b.todo);rCol('tProg',b['in-progress']);rCol('tDone',b.done);
@@ -722,13 +1031,15 @@
       document.getElementById('cProg').textContent=b['in-progress'].length;
       document.getElementById('cDone').textContent=b.done.length;
 
-      const tot=tasks.length,dn=tasks.filter(t=>t.status==='done').length,pc=tot?Math.round(dn/tot*100):0;
-      document.getElementById('stTodo').textContent=tasks.filter(t=>t.status==='todo').length;
-      document.getElementById('stProg').textContent=tasks.filter(t=>t.status==='in-progress').length;
+      // Summary stats follow active filter
+      const tot=ft.length,dn=b.done.length,pc=tot?Math.round(dn/tot*100):0;
+      document.getElementById('stTodo').textContent=b.todo.length;
+      document.getElementById('stProg').textContent=b['in-progress'].length;
       document.getElementById('stDone').textContent=dn;
       document.getElementById('barFill').style.width=pc+'%';
       document.getElementById('barPct').textContent=pc+'%';
 
+      // Sidebar counts always show unfiltered totals
       document.getElementById('sAll').textContent=tasks.length;
       document.getElementById('sSvd').textContent=tasks.filter(t=>t.category==='SVD-OS').length;
       document.getElementById('sPer').textContent=tasks.filter(t=>t.category==='Personal').length;
@@ -760,8 +1071,8 @@
         '<div class="card-tags"><span class="tag '+pc+'">'+pl+'</span><span class="tag '+cc+'">'+esc(t.category)+'</span></div>'+
         '<div class="card-foot"><div class="card-ava '+ac+'">'+al+'</div>'+
         '<div class="card-acts">'+
-        '<button class="act" onclick="editT(\''+t.id+'\')" title="Edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
-        '<button class="act del" onclick="delT(\''+t.id+'\')" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>'+
+        '<button class="act" onclick="editT(\''+t.id+'\',event)" title="Edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
+        '<button class="act del" onclick="delT(\''+t.id+'\',event)" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>'+
         '</div></div></div>';
     }
 
@@ -784,8 +1095,8 @@
     function closeM(){document.getElementById('ov').classList.remove('on');eid=null}
     function resF(){document.getElementById('inTitle').value='';document.getElementById('inCat').value='SVD-OS';document.getElementById('inPri').value='medium';document.getElementById('inOwn').value='SAT';document.getElementById('inStatus').value='todo';document.getElementById('inNotes').value='';document.getElementById('inLinkUrl').value='';document.getElementById('inDaily').checked=false;mLinks=[];rMLinks()}
 
-    function editT(id){event.stopPropagation();const t=tasks.find(x=>x.id===id);if(!t)return;eid=id;document.getElementById('inTitle').value=t.title;document.getElementById('inCat').value=t.category;document.getElementById('inPri').value=t.priority;document.getElementById('inOwn').value=t.createdBy;document.getElementById('inStatus').value=t.status;document.getElementById('inNotes').value=t.notes||'';document.getElementById('inDaily').checked=!!t.isDaily;mLinks=[...(t.links||[])];rMLinks();openM(true)}
-    function delT(id){event.stopPropagation();delTask(id)}
+    function editT(id,ev){if(ev)ev.stopPropagation();const t=tasks.find(x=>x.id===id);if(!t)return;eid=id;document.getElementById('inTitle').value=t.title;document.getElementById('inCat').value=t.category;document.getElementById('inPri').value=t.priority;document.getElementById('inOwn').value=t.createdBy;document.getElementById('inStatus').value=t.status;document.getElementById('inNotes').value=t.notes||'';document.getElementById('inDaily').checked=!!t.isDaily;mLinks=[...(t.links||[])];rMLinks();openM(true)}
+    function delT(id,ev){if(ev)ev.stopPropagation();delTask(id)}
 
     // Modal link management
     function addMLink(){const v=document.getElementById('inLinkUrl').value.trim();if(!v)return;mLinks.push(v);document.getElementById('inLinkUrl').value='';rMLinks()}
@@ -815,8 +1126,27 @@
 
     function toast(m){const c=document.getElementById('toastC'),t=document.createElement('div');t.className='toast';t.textContent=m;c.appendChild(t);setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),200)},1800)}
 
+    // ═══════════════ MOBILE HAMBURGER MENU ═══════════════
+    function toggleSidebar(){
+      const sb=document.querySelector('.sidebar');
+      const ov=document.getElementById('sOverlay');
+      const ham=document.getElementById('hamBtn');
+      const isOpen=sb.classList.contains('open');
+      if(isOpen){sb.classList.remove('open');ov.classList.remove('on');ham.classList.remove('active');setTimeout(()=>ov.style.display='none',200)}
+      else{ov.style.display='block';requestAnimationFrame(()=>{sb.classList.add('open');ov.classList.add('on');ham.classList.add('active')})}
+    }
+    function closeSidebar(){
+      const sb=document.querySelector('.sidebar');
+      if(!sb.classList.contains('open'))return;
+      toggleSidebar();
+    }
+
     // ═══════════════ BINDINGS ═══════════════
     function bind(){
+      // Hamburger menu
+      document.getElementById('hamBtn').addEventListener('click',toggleSidebar);
+      document.getElementById('sOverlay').addEventListener('click',closeSidebar);
+
       document.getElementById('btnAdd').addEventListener('click',()=>openM());
       document.getElementById('mClose').addEventListener('click',closeM);
       document.getElementById('mCancel').addEventListener('click',closeM);
@@ -827,16 +1157,26 @@
       document.getElementById('inLinkUrl').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addMLink()}});
       document.querySelectorAll('[data-filter]').forEach(e=>e.addEventListener('click',()=>setF('category',e.dataset.filter)));
       document.querySelectorAll('[data-owner]').forEach(e=>e.addEventListener('click',()=>setF('owner',e.dataset.owner)));
-      document.querySelectorAll('[data-sidebar-filter]').forEach(e=>e.addEventListener('click',()=>setF('category',e.dataset.sidebarFilter)));
-      document.getElementById('sExp').addEventListener('click',expJ);
-      document.getElementById('sImp').addEventListener('click',()=>document.getElementById('fIn').click());
+      document.querySelectorAll('[data-sidebar-filter]').forEach(e=>e.addEventListener('click',()=>{setF('category',e.dataset.sidebarFilter);closeSidebar()}));
+      document.getElementById('sExp').addEventListener('click',()=>{expJ();closeSidebar()});
+      document.getElementById('sImp').addEventListener('click',()=>{document.getElementById('fIn').click();closeSidebar()});
       document.getElementById('fIn').addEventListener('change',e=>{if(e.target.files[0]){impJ(e.target.files[0]);e.target.value=''}});
-      document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM();const t=document.activeElement.tagName;if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&t!=='INPUT'&&t!=='TEXTAREA'&&t!=='SELECT'){e.preventDefault();openM()}});
-      // View switcher
-      document.querySelectorAll('[data-view]').forEach(e=>e.addEventListener('click',()=>switchView(e.dataset.view)));
+      document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeM();closeBmModal();closeSidebar()}const t=document.activeElement.tagName;if(e.key==='n'&&!e.metaKey&&!e.ctrlKey&&t!=='INPUT'&&t!=='TEXTAREA'&&t!=='SELECT'){e.preventDefault();openM()}});
+      // View switcher — also close sidebar on mobile
+      document.querySelectorAll('[data-view]').forEach(e=>e.addEventListener('click',()=>{switchView(e.dataset.view);closeSidebar()}));
       // Daily add
       document.getElementById('dailyAddBtn').addEventListener('click',addDailyTask);
       document.getElementById('dailyInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addDailyTask()}});
+      // Bookmark add
+      document.getElementById('bmAddBtn').addEventListener('click',addBookmark);
+      document.getElementById('bmUrlIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addBookmark()}});
+      // Bookmark modal
+      document.getElementById('bmMClose').addEventListener('click',closeBmModal);
+      document.getElementById('bmOv').addEventListener('click',e=>{if(e.target===e.currentTarget)closeBmModal()});
+      document.getElementById('bmMLinkAdd').addEventListener('click',addBmModalLink);
+      document.getElementById('bmMLinkIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addBmModalLink()}});
+      document.getElementById('bmMSave').addEventListener('click',saveBmModal);
+      document.getElementById('bmMDel').addEventListener('click',deleteBmFromModal);
     }
 
     // ═══════════════ VIEW SWITCHING ═══════════════
@@ -847,7 +1187,9 @@
       const boardEls=['stats','toolbar','board'];
       boardEls.forEach(id=>{const el=document.querySelector('.'+id)||document.getElementById(id);if(el)el.style.display=view==='board'?'':'none'});
       document.getElementById('dailyView').classList.toggle('on',view==='daily');
+      document.getElementById('bmView').classList.toggle('on',view==='bookmarks');
       if(view==='daily')renderDaily();
+      if(view==='bookmarks')renderBookmarks();
     }
 
     // ═══════════════ DAILY LOGIC ═══════════════
@@ -885,6 +1227,166 @@
       const v=inp.value.trim();if(!v)return;
       await addTask(v,'SVD-OS','medium','SAT','todo','',[], true);
       inp.value='';
+    }
+
+    // ═══════════════ BOOKMARKS ═══════════════
+    let bmEditId=null, bmEditLinks=[];
+
+    function loadBookmarks(){try{const s=localStorage.getItem(BK);if(s)bookmarks=JSON.parse(s)||[];migrateBm()}catch(e){bookmarks=[]}}
+    function saveBookmarks(){localStorage.setItem(BK,JSON.stringify(bookmarks))}
+
+    // Migrate old single-url format to links[]
+    function migrateBm(){
+      let ch=false;
+      bookmarks.forEach(b=>{
+        if(b.url&&!b.links){b.links=[{url:b.url,label:b.name||''}];delete b.url;ch=true}
+        if(!b.links)b.links=[];
+        if(!b.notes)b.notes='';
+      });
+      if(ch)saveBookmarks();
+    }
+
+    function renderBookmarks(){
+      const filtered=bookmarks.filter(b=>ALLOWED_CATS.includes(b.category));
+      const el=document.getElementById('bmContent');
+      document.getElementById('sBm').textContent=filtered.length;
+      if(!filtered.length){el.innerHTML='<div class="bm-empty">No bookmarks yet. Add one above!</div>';return}
+
+      const cats=['SVD-OS','Personal','Session'];
+      let html='';
+      cats.forEach(cat=>{
+        const items=filtered.filter(b=>b.category===cat);
+        if(!items.length)return;
+        html+='<div class="bm-section">';
+        html+='<div class="bm-section-label">'+esc(cat)+' <span class="bm-cnt">('+items.length+')</span></div>';
+        html+='<div class="bm-grid">';
+        items.forEach(b=>{
+          const mainUrl=(b.links&&b.links[0])?b.links[0].url:'';
+          let domain='';try{domain=new URL(mainUrl).hostname}catch(x){domain=mainUrl}
+          const favicon=mainUrl?'https://www.google.com/s2/favicons?domain='+encodeURIComponent(domain)+'&sz=32':'';
+          const lc=b.links?b.links.length:0;
+          const hasNotes=b.notes&&b.notes.trim();
+          html+='<div class="bm-card" onclick="openBmModal(\''+b.id+'\')">'; // div, not <a>
+          if(favicon){html+='<div class="bm-favicon"><img src="'+favicon+'" onerror="this.style.display=\'none\';this.parentElement.textContent=\''+esc(b.name.charAt(0).toUpperCase())+'\'" loading="lazy"></div>'}
+          else{html+='<div class="bm-favicon">'+esc(b.name.charAt(0).toUpperCase())+'</div>'}
+          html+='<div class="bm-info"><div class="bm-name">'+esc(b.name)+'</div><div class="bm-url">'+esc(domain)+'</div></div>';
+          if(lc>1)html+='<span class="bm-link-cnt">'+lc+' links</span>';
+          if(hasNotes)html+='<span class="bm-link-cnt">memo</span>';
+          html+='</div>';
+        });
+        html+='</div></div>';
+      });
+      el.innerHTML=html;
+    }
+
+    // Quick-add from toolbar (creates single-link bookmark)
+    function addBookmark(){
+      const nameIn=document.getElementById('bmNameIn');
+      const urlIn=document.getElementById('bmUrlIn');
+      const catIn=document.getElementById('bmCatIn');
+      let name=nameIn.value.trim(),url=urlIn.value.trim();
+      if(!url)return;
+      if(!name){try{name=new URL(url).hostname.replace('www.','')}catch(x){name=url}}
+      if(!/^https?:\/\//i.test(url))url='https://'+url;
+      const bm={id:'bm-'+Date.now().toString(36)+'-'+Math.random().toString(36).substr(2,4),name:name,links:[{url:url,label:name}],notes:'',category:catIn.value,createdAt:new Date().toISOString()};
+      bookmarks.push(bm);
+      saveBookmarks();renderBookmarks();
+      nameIn.value='';urlIn.value='';
+      toast('BOOKMARK ADDED');
+      gasSaveBm(bm);
+    }
+
+    // Detail modal
+    function openBmModal(id){
+      const bm=bookmarks.find(b=>b.id===id);if(!bm)return;
+      bmEditId=id;
+      bmEditLinks=[...(bm.links||[])];
+      document.getElementById('bmMTitle').value=bm.name;
+      document.getElementById('bmMCat').value=bm.category;
+      document.getElementById('bmMNotes').value=bm.notes||'';
+      // Favicon
+      const fav=document.getElementById('bmMFav');
+      const mainUrl=bmEditLinks[0]?bmEditLinks[0].url:'';
+      let domain='';try{domain=new URL(mainUrl).hostname}catch(x){}
+      if(domain){fav.innerHTML='<img src="https://www.google.com/s2/favicons?domain='+encodeURIComponent(domain)+'&sz=64" onerror="this.style.display=\'none\';this.parentElement.textContent=\''+esc(bm.name.charAt(0).toUpperCase())+'\'">'}else{fav.textContent=bm.name.charAt(0).toUpperCase()}
+      renderBmModalLinks();
+      document.getElementById('bmOv').classList.add('on');
+    }
+
+    function closeBmModal(){document.getElementById('bmOv').classList.remove('on');bmEditId=null}
+
+    function renderBmModalLinks(){
+      const el=document.getElementById('bmMLinks');
+      if(!bmEditLinks.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No links yet</div>';return}
+      el.innerHTML=bmEditLinks.map((l,i)=>{
+        let domain='',label=l.label||'';try{domain=new URL(l.url).hostname;if(!label)label=domain}catch(x){if(!label)label=l.url}
+        const fav='https://www.google.com/s2/favicons?domain='+encodeURIComponent(domain)+'&sz=32';
+        return '<a class="bm-m-link" href="'+esc(l.url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+'<div class="bm-m-link-fav"><img src="'+fav+'" onerror="this.style.display=\'none\'" loading="lazy"></div>'+'<div class="bm-m-link-info"><div class="bm-m-link-label">'+esc(label)+'</div><div class="bm-m-link-url">'+esc(l.url)+'</div></div>'+'<button class="bm-m-link-rm" onclick="event.preventDefault();event.stopPropagation();rmBmModalLink('+i+')" title="Remove"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'+'</a>';
+      }).join('');
+    }
+
+    function addBmModalLink(){
+      const inp=document.getElementById('bmMLinkIn');
+      let url=inp.value.trim();if(!url)return;
+      if(!/^https?:\/\//i.test(url))url='https://'+url;
+      let label='';try{label=new URL(url).hostname}catch(x){label=url}
+      bmEditLinks.push({url:url,label:label});
+      inp.value='';renderBmModalLinks();
+    }
+
+    function rmBmModalLink(i){bmEditLinks.splice(i,1);renderBmModalLinks()}
+
+    async function saveBmModal(){
+      if(!bmEditId)return;
+      const i=bookmarks.findIndex(b=>b.id===bmEditId);if(i<0)return;
+      bookmarks[i].name=document.getElementById('bmMTitle').value.trim()||bookmarks[i].name;
+      bookmarks[i].category=document.getElementById('bmMCat').value;
+      bookmarks[i].notes=document.getElementById('bmMNotes').value.trim();
+      bookmarks[i].links=[...bmEditLinks];
+      saveBookmarks();renderBookmarks();closeBmModal();
+      toast('BOOKMARK SAVED');
+      await gasSaveBm(bookmarks[i]);
+    }
+
+    async function deleteBmFromModal(){
+      if(!bmEditId)return;
+      bookmarks=bookmarks.filter(b=>b.id!==bmEditId);
+      saveBookmarks();renderBookmarks();closeBmModal();
+      toast('BOOKMARK DELETED');
+      await gasDelBm(bmEditId);
+    }
+
+    function delBm(id){
+      bookmarks=bookmarks.filter(b=>b.id!==id);
+      saveBookmarks();renderBookmarks();
+      toast('BOOKMARK DELETED');
+      gasDelBm(id);
+    }
+
+    // GAS sync for bookmarks
+    async function gasSaveBm(bm){
+      if(!GAS_URL||!gasLive)return;
+      // Flatten links for GAS storage
+      const flat={...bm,links:JSON.stringify(bm.links||[])};
+      await gasPost({action:'saveBm',bookmark:flat});
+    }
+    async function gasDelBm(id){
+      if(!GAS_URL||!gasLive)return;
+      await gasPost({action:'deleteBm',id:id});
+    }
+    async function syncBmFromGAS(){
+      if(!GAS_URL||!gasLive)return;
+      const res=await gasGet('&action=listBm');
+      if(res.success&&res.bookmarks){
+        if(res.bookmarks.length>0){
+          // Parse links from JSON strings
+          bookmarks=res.bookmarks.map(b=>{if(typeof b.links==='string'){try{b.links=JSON.parse(b.links)}catch(x){b.links=[]}}if(!b.links)b.links=[];if(!b.notes)b.notes='';return b});
+          saveBookmarks();renderBookmarks();
+        } else if(bookmarks.length>0){
+          const flat=bookmarks.map(b=>({...b,links:JSON.stringify(b.links||[])}));
+          await gasPost({action:'bulkBm',bookmarks:flat});
+        }
+      }
     }
 
     init();
