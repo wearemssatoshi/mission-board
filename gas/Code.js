@@ -159,7 +159,7 @@ function saveTask(ss, task) {
       task.createdAt,
       task.completedAt || '',
       task.notes || '',
-      JSON.stringify(task.links || []),
+      typeof task.links === 'string' ? task.links : JSON.stringify(task.links || []),
       String(!!task.isDaily),
       task.dailyChecked || ''
     ];
@@ -231,7 +231,7 @@ function bulkSave(ss, tasks) {
       t.createdAt || getJST(),
       t.completedAt || '',
       t.notes || '',
-      JSON.stringify(t.links || []),
+      typeof t.links === 'string' ? t.links : JSON.stringify(t.links || []),
       String(!!t.isDaily),
       t.dailyChecked || ''
     ]);
@@ -268,12 +268,18 @@ function getJST() {
 
 function parseLinks(val) {
   if (!val) return [];
-  try {
-    const parsed = JSON.parse(val);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (e) {
-    return [];
+  // Handle double/triple-encoded JSON strings
+  let result = val;
+  let guard = 0;
+  while (typeof result === 'string' && guard < 3) {
+    try {
+      result = JSON.parse(result);
+    } catch (e) {
+      return [];
+    }
+    guard++;
   }
+  return Array.isArray(result) ? result : [];
 }
 
 // ═══════════════ BOOKMARK OPERATIONS ═══════════════
