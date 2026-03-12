@@ -1012,7 +1012,9 @@
       if(!VALID_CATS.includes(t.category)) t.category='SVD-OS';
       if(!VALID_PRI.includes(t.priority)) t.priority='medium';
       if(!VALID_STATUS.includes(t.status)) t.status='todo';
-      if(!t.links) t.links=[];
+      // GAS stores links as JSON string — parse if needed
+      if(typeof t.links==='string'){try{t.links=JSON.parse(t.links)}catch(x){t.links=[]}}
+      if(!Array.isArray(t.links)) t.links=[];
       return t;
     }
 
@@ -1032,7 +1034,8 @@
           // GAS is empty but local has data → upload local to GAS
           tasks=localTasks;
           setBadge('syncing');
-          const up=await gasPost({action:'bulk',tasks:tasks});
+          const flatTasks=tasks.map(t=>({...t,links:JSON.stringify(t.links||[])}));
+          const up=await gasPost({action:'bulk',tasks:flatTasks});
           if(up.success){setBadge('live');toast('LOCAL → GAS SYNCED')}
           else setBadge('live');
           render();
@@ -1051,7 +1054,9 @@
     async function gasSaveTask(task){
       if(!GAS_URL||!gasLive){saveLocal();return}
       setBadge('syncing');
-      const res=await gasPost({action:'save',task:task});
+      // Flatten links to JSON string for GAS spreadsheet storage
+      const flat={...task, links:JSON.stringify(task.links||[])};
+      const res=await gasPost({action:'save',task:flat});
       if(res.error){gasLive=false;setBadge('offline');toast('OFFLINE MODE')}
       else setBadge('live');
     }
@@ -1089,7 +1094,8 @@
             // Sync to GAS if live
             if(GAS_URL&&gasLive){
               setBadge('syncing');
-              const res=await gasPost({action:'bulk',tasks:tasks});
+              const flatTasks=tasks.map(t=>({...t,links:JSON.stringify(t.links||[])}));
+              const res=await gasPost({action:'bulk',tasks:flatTasks});
               if(res.success){setBadge('live');toast('SYNCED TO GAS')}
               else setBadge('offline');
             }
