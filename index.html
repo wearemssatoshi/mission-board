@@ -1012,9 +1012,10 @@
       if(!VALID_CATS.includes(t.category)) t.category='SVD-OS';
       if(!VALID_PRI.includes(t.priority)) t.priority='medium';
       if(!VALID_STATUS.includes(t.status)) t.status='todo';
-      // GAS stores links as JSON string — parse if needed
-      if(typeof t.links==='string'){try{t.links=JSON.parse(t.links)}catch(x){t.links=[]}}
-      if(!Array.isArray(t.links)) t.links=[];
+      // GAS may return double-encoded JSON strings — unwrap until array
+      let lk=t.links; let guard=0;
+      while(typeof lk==='string'&&guard<3){try{lk=JSON.parse(lk)}catch(x){lk=[];break}guard++}
+      t.links=Array.isArray(lk)?lk:[];
       return t;
     }
 
