@@ -988,9 +988,9 @@
     }
 
     // ═══════════════ GAS COMMUNICATION ═══════════════
-    async function gasGet(params=''){
+    async function gasGet(action='list'){
       try{
-        const r=await fetch(GAS_URL+'?action=list'+params,{redirect:'follow'});
+        const r=await fetch(GAS_URL+'?action='+action,{redirect:'follow'});
         return await r.json();
       }catch(e){console.warn('GAS GET error:',e);return {error:e.message}}
     }
@@ -1489,7 +1489,7 @@
     }
     async function syncBmFromGAS(){
       if(!GAS_URL||!gasLive)return;
-      const res=await gasGet('&action=listBm');
+      const res=await gasGet('listBm');
       if(res.success&&res.bookmarks){
         if(res.bookmarks.length>0){
           // Parse links from JSON strings
