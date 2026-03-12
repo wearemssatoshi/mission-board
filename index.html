@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mission Board — SAT × G</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#06060a">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     /* ==========================================================
@@ -323,9 +328,21 @@
     .card { animation:cIn .2s ease }
     @keyframes cIn { from { opacity:0; transform:translateY(4px) } to { opacity:1; transform:translateY(0) } }
 
+    /* ========== USER SELECT OVERLAY ========== */
+    .user-select { position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center; flex-direction:column }
+    .user-select.hidden { display:none }
+    .us-logo { font-size:28px; font-weight:800; color:var(--gold); letter-spacing:-0.03em; margin-bottom:4px }
+    .us-sub { font-size:12px; color:var(--text-sub); letter-spacing:0.04em; margin-bottom:32px }
+    .us-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:420px; width:90% }
+    .us-card { padding:16px 20px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-lg); cursor:pointer; text-align:center; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; color:var(--text); transition:all .18s ease; letter-spacing:0.01em }
+    .us-card:hover { background:var(--gold-dim); border-color:var(--gold); color:var(--gold); transform:translateY(-2px); box-shadow:var(--shadow-lift) }
+    .us-card:active { transform:translateY(0) }
+    .us-hint { margin-top:24px; font-size:10px; color:var(--text-muted); letter-spacing:0.04em }
+    @media(max-width:480px) { .us-grid { grid-template-columns:repeat(2,1fr); gap:8px } .us-card { padding:14px 12px; font-size:13px } }
+
     /* ========== HAMBURGER MENU BUTTON ========== */
     .ham {
-      display:none; position:fixed; top:12px; left:12px; z-index:250;
+      display:none; position:fixed; top:12px; right:12px; z-index:250;
       width:40px; height:40px; border:none; background:var(--surface-2);
       border-radius:var(--r); cursor:pointer; align-items:center; justify-content:center;
       box-shadow:var(--shadow-card); border:1px solid var(--border); transition:all var(--t);
@@ -358,7 +375,7 @@
       .main { margin-left:0 }
 
       /* Page head */
-      .page-head { padding:56px 16px 0 }
+      .page-head { padding:16px 16px 0 }
       .page-title { font-size:20px }
       .page-sub { font-size:10px }
 
@@ -566,6 +583,14 @@
   </style>
 </head>
 <body>
+
+  <!-- USER SELECT OVERLAY -->
+  <div class="user-select hidden" id="userSelect">
+    <div class="us-logo">MISSION BOARD</div>
+    <div class="us-sub">あなたの名前を選択してください</div>
+    <div class="us-grid" id="usGrid"></div>
+    <div class="us-hint">選択した名前はこのデバイスに記憶されます</div>
+  </div>
 
   <!-- HAMBURGER MENU -->
   <button class="ham" id="hamBtn" aria-label="Menu">
@@ -842,17 +867,82 @@
     let tasks=[], eid=null, fCat='all', fOwn='all', mLinks=[], gasLive=false, curView='board';
     let bookmarks=[];
 
-    // ═══════════════ ROLE SYSTEM ═══════════════
-    const ROLE = new URLSearchParams(window.location.search).get('role') || 'admin';
-    const IS_MANAGER = ROLE === 'manager';
-    const ALLOWED_CATS = IS_MANAGER ? ['SVD-OS'] : ['SVD-OS','Personal','Session'];
+    // ═══════════════ MULTI-USER SYSTEM ═══════════════
+    const MANAGERS = [
+      {id:'sato_t', name:'佐藤友哉'},
+      {id:'sato_k', name:'佐藤勝則'},
+      {id:'yamaguchi', name:'山口祥隆'},
+      {id:'mishina', name:'三品真二'},
+      {id:'muramatsu', name:'村松良介'},
+      {id:'mizukami', name:'水上貴'},
+      {id:'ushida', name:'牛田智之'},
+      {id:'goto', name:'後藤義人'}
+    ];
+    const USER_KEY = 'mission_board_user';
+    let CURRENT_USER = null; // set in init
+    let IS_ADMIN = false;
+    let ALLOWED_CATS = ['SVD-OS','Personal','Session']; // default: all (SAT); managers → ['SVD-OS']
+
+    function getUserIdentity(){
+      // URL override
+      const urlUser = new URLSearchParams(window.location.search).get('user');
+      if(urlUser){localStorage.setItem(USER_KEY, urlUser); return urlUser}
+      // Legacy ?role=manager support
+      const role = new URLSearchParams(window.location.search).get('role');
+      if(role==='manager'){return null} // show selection
+      // No params = SAT admin
+      if(!window.location.search || window.location.search==='?') return 'SAT';
+      // Check localStorage
+      return localStorage.getItem(USER_KEY) || null;
+    }
+
+    function showUserSelect(){
+      const grid=document.getElementById('usGrid');
+      grid.innerHTML=MANAGERS.map(m=>'<div class="us-card" data-uid="'+m.id+'">'+m.name+'</div>').join('');
+      grid.querySelectorAll('.us-card').forEach(c=>c.addEventListener('click',()=>{
+        const uid=c.dataset.uid;
+        localStorage.setItem(USER_KEY, uid);
+        CURRENT_USER=uid;
+        IS_ADMIN=false;
+        document.getElementById('userSelect').classList.add('hidden');
+        applyUser();
+        render();renderBookmarks();
+      }));
+      document.getElementById('userSelect').classList.remove('hidden');
+    }
+
+    function getUserDisplayName(){
+      if(IS_ADMIN) return 'SAT';
+      const m=MANAGERS.find(x=>x.id===CURRENT_USER);
+      return m ? m.name : CURRENT_USER || 'Guest';
+    }
+
+    function getUserInitial(){
+      const name=getUserDisplayName();
+      return name.charAt(0).toUpperCase();
+    }
 
     // ═══════════════ INIT ═══════════════
     async function init(){
+      // Resolve user identity
+      CURRENT_USER = getUserIdentity();
+      IS_ADMIN = (CURRENT_USER === 'SAT');
+
+      if(!CURRENT_USER){
+        // Show user selection screen
+        showUserSelect();
+        // Still load data in background
+        loadLocal(); loadBookmarks(); migrate(); bind();
+        if(GAS_URL) await syncFromGAS();
+        else setBadge('offline');
+        return;
+      }
+
+      document.getElementById('userSelect').classList.add('hidden');
       loadLocal();
       loadBookmarks();
       migrate();
-      applyRole();
+      applyUser();
       render();
       renderBookmarks();
       bind();
@@ -860,30 +950,41 @@
       else setBadge('offline');
     }
 
-    function applyRole(){
-      if(!IS_MANAGER) return;
-      // Force SVD-OS filter
-      fCat='SVD-OS';
-      // Hide sidebar elements managers shouldn't see
-      document.querySelectorAll('[data-sidebar-filter="Personal"],[data-sidebar-filter="Session"],[data-sidebar-filter="all"]').forEach(e=>e.style.display='none');
-      // Hide toolbar filters for Personal/Session
-      document.querySelectorAll('[data-filter="Personal"],[data-filter="Session"]').forEach(e=>e.style.display='none');
-      // Hide owner filter and daily view (SAT-specific)
-      document.querySelectorAll('[data-owner]').forEach(e=>e.style.display='none');
-      document.querySelectorAll('[data-view="daily"]').forEach(e=>e.style.display='none');
-      // Hide export/import
-      const sExp=document.getElementById('sExp');if(sExp)sExp.parentElement.style.display='none';
-      // Hide the tb-div near hidden buttons
-      document.querySelectorAll('.tb-div').forEach(d=>d.style.display='none');
-      // Update footer
+    function applyUser(){
+      const dn=getUserDisplayName();
+      const ini=getUserInitial();
+
+      if(!IS_ADMIN){
+        // Restrict categories for managers
+        ALLOWED_CATS=['SVD-OS'];
+        // Non-admin: hide Personal/Session sidebar filters
+        document.querySelectorAll('[data-sidebar-filter="Personal"],[data-sidebar-filter="Session"]').forEach(e=>e.style.display='none');
+        // Hide toolbar filters for Personal/Session
+        document.querySelectorAll('[data-filter="Personal"],[data-filter="Session"]').forEach(e=>e.style.display='none');
+        // Hide daily view (SAT-specific)
+        document.querySelectorAll('[data-view="daily"]').forEach(e=>e.style.display='none');
+        // Hide export/import
+        const actSection=document.getElementById('sExp');if(actSection)actSection.closest('.s-section').style.display='none';
+        // Hide owner filters and tb-divs
+        document.querySelectorAll('[data-owner]').forEach(e=>e.style.display='none');
+        document.querySelectorAll('.tb-div').forEach(d=>d.style.display='none');
+        // Update page subtitle
+        document.querySelector('.page-sub').textContent='Restaurant OS — '+dn;
+      }
+      // Update footer for all users
       const footer=document.querySelector('.s-footer');
-      if(footer) footer.innerHTML='<div class="s-ava" style="background:var(--blue)">M</div><span class="s-user">MANAGER</span>';
-      // Update page title
-      document.querySelector('.page-sub').textContent='Restaurant OS — Manager View';
-      // Lock category selects to SVD-OS
-      document.querySelectorAll('#inCat option, #bmCatIn option, #bmMCat option').forEach(o=>{if(o.value!=='SVD-OS')o.remove()});
-      // Set active toolbar filter
-      document.querySelectorAll('[data-filter]').forEach(e=>e.classList.toggle('active',e.dataset.filter==='SVD-OS'));
+      if(footer) footer.innerHTML='<div class="s-ava" style="background:var('+(IS_ADMIN?'--gold':'--blue')+')">'+ini+'</div><span class="s-user">'+dn+'</span>';
+      // Set createdBy default in owner dropdown
+      const ownSel=document.getElementById('inOwn');
+      if(ownSel){
+        // Add current user as option if not present
+        const existing=[...ownSel.options].map(o=>o.value);
+        if(!existing.includes(CURRENT_USER)){
+          const opt=document.createElement('option');opt.value=CURRENT_USER;opt.textContent=dn;
+          ownSel.appendChild(opt);
+        }
+        ownSel.value=existing.includes(CURRENT_USER)?CURRENT_USER:(IS_ADMIN?'SAT':'SAT');
+      }
     }
 
     // ═══════════════ GAS COMMUNICATION ═══════════════
@@ -1054,7 +1155,16 @@
     }
 
     function rCard(t){
-      const ac=t.createdBy==='SAT'?'ava-s':'ava-g',al=t.createdBy==='SAT'?'S':'G';
+      // Avatar: determine initial & color from createdBy
+      let aColor='ava-s', aLabel='S';
+      if(t.createdBy==='SAT'){aColor='ava-s';aLabel='S'}
+      else if(t.createdBy==='G'){aColor='ava-g';aLabel='G'}
+      else{
+        const mgr=MANAGERS.find(m=>m.id===t.createdBy);
+        aLabel=mgr?mgr.name.charAt(0):t.createdBy.charAt(0).toUpperCase();
+        aColor='';
+      }
+      const aStyle=aColor?'':' style="background:var(--blue)"';
       const pl={high:'HIGH',medium:'MED',low:'LOW'}[t.priority]||'MED';
       const pc='tag-'+(t.priority==='high'?'high':t.priority==='low'?'low':'med');
       const cc=t.category==='SVD-OS'?'tag-svd':t.category==='Personal'?'tag-personal':'tag-session';
@@ -1066,13 +1176,16 @@
         let popItems=lks.map(l=>{let label='Link';try{label=new URL(l).hostname}catch(x){}return '<a class="link-pop-item" href="'+esc(l)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>'+esc(label)+'</a>'}).join('');
         lkHtml='<button class="card-links-btn" onclick="event.stopPropagation();togglePop(this)"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>'+lks.length+' links</button><div class="link-pop">'+popItems+'</div>';
       }
+      // Ownership-based actions: only show delete for own tasks
+      const canDelete=IS_ADMIN||t.createdBy===CURRENT_USER;
+      const delBtn=canDelete?'<button class="act del" onclick="delT(\''+t.id+'\',event)" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>':'';
       return '<div class="card" draggable="true" ondragstart="dStart(event,\''+t.id+'\')" ondragend="dEnd(event)" data-task-id="'+t.id+
         '"><div class="card-title">'+esc(t.title)+'</div>'+n+lkHtml+
         '<div class="card-tags"><span class="tag '+pc+'">'+pl+'</span><span class="tag '+cc+'">'+esc(t.category)+'</span></div>'+
-        '<div class="card-foot"><div class="card-ava '+ac+'">'+al+'</div>'+
+        '<div class="card-foot"><div class="card-ava '+aColor+'"'+aStyle+'>'+aLabel+'</div>'+
         '<div class="card-acts">'+
         '<button class="act" onclick="editT(\''+t.id+'\',event)" title="Edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'+
-        '<button class="act del" onclick="delT(\''+t.id+'\',event)" title="Delete"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>'+
+        delBtn+
         '</div></div></div>';
     }
 
@@ -1093,7 +1206,7 @@
     function openM(edit){document.getElementById('ov').classList.add('on');document.getElementById('mSave').textContent=edit?'SAVE':'CREATE';if(!edit){resF();eid=null}setTimeout(()=>document.getElementById('inTitle').focus(),120)}
     function openS(s){resF();document.getElementById('inStatus').value=s;eid=null;openM(false)}
     function closeM(){document.getElementById('ov').classList.remove('on');eid=null}
-    function resF(){document.getElementById('inTitle').value='';document.getElementById('inCat').value='SVD-OS';document.getElementById('inPri').value='medium';document.getElementById('inOwn').value='SAT';document.getElementById('inStatus').value='todo';document.getElementById('inNotes').value='';document.getElementById('inLinkUrl').value='';document.getElementById('inDaily').checked=false;mLinks=[];rMLinks()}
+    function resF(){document.getElementById('inTitle').value='';document.getElementById('inCat').value='SVD-OS';document.getElementById('inPri').value='medium';document.getElementById('inOwn').value=CURRENT_USER||'SAT';document.getElementById('inStatus').value='todo';document.getElementById('inNotes').value='';document.getElementById('inLinkUrl').value='';document.getElementById('inDaily').checked=false;mLinks=[];rMLinks()}
 
     function editT(id,ev){if(ev)ev.stopPropagation();const t=tasks.find(x=>x.id===id);if(!t)return;eid=id;document.getElementById('inTitle').value=t.title;document.getElementById('inCat').value=t.category;document.getElementById('inPri').value=t.priority;document.getElementById('inOwn').value=t.createdBy;document.getElementById('inStatus').value=t.status;document.getElementById('inNotes').value=t.notes||'';document.getElementById('inDaily').checked=!!t.isDaily;mLinks=[...(t.links||[])];rMLinks();openM(true)}
     function delT(id,ev){if(ev)ev.stopPropagation();delTask(id)}
